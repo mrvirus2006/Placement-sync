@@ -14,7 +14,7 @@ const Reviews = () => {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await fetch('/api/reviews');
+        const response = await fetch('https://placement-sync.onrender.com/api/reviews');
         if (response.ok) {
           const data = await response.json();
           // 3. FIX: Replace state directly. Do NOT use [...prev, ...data]
@@ -54,7 +54,7 @@ const Reviews = () => {
     setForm({ name: '', text: '', stars: 5 });
 
     try {
-      await fetch('/api/reviews', {
+      await fetch('https://placement-sync.onrender.com/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newReview),

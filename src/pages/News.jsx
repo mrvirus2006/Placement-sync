@@ -6,7 +6,7 @@ const News = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_KEY = import.meta.env.VITE_NEWS_API_KEY || "b356de36ebf14b24a9b53e3bf1f72649"; 
+  const API_KEY = import.meta.env.VITE_NEWS_API_KEY 
   const fallbackImage = "https://images.unsplash.com/photo-1586281380349-632531db7ed4?q=80&w=1000&auto=format&fit=crop";
 
   useEffect(() => {

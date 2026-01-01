@@ -27,7 +27,7 @@ const Apply = () => {
 
     try {
       // THE REAL BACKEND CALL
-      const response = await fetch('/api/users/register', {
+      const response = await fetch('https://placement-sync.onrender.com/api/users/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

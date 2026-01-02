@@ -25,7 +25,7 @@ router.post('/analyze-profile', async (req, res) => {
   try {
     // ✅ FIXED: Using 'command-r-plus-08-2024'
     const response = await cohere.chat({
-        model: 'command-r-plus',
+        model: 'command-r-plus-08-2024',
         message: `
             You are a strict and professional Career Architect.
             Analyze this student profile:

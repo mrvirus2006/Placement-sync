@@ -6,54 +6,54 @@ const News = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_KEY = import.meta.env.VITE_NEWS_API_KEY 
+  // GNews API uses 'apikey' as the parameter name
+  const API_KEY = import.meta.env.VITE_NEWS_API_KEY; 
   const fallbackImage = "https://images.unsplash.com/photo-1586281380349-632531db7ed4?q=80&w=1000&auto=format&fit=crop";
 
   useEffect(() => {
     const fetchNews = async () => {
       if (!API_KEY) {
-        setError("API Key Missing.");
+        setError("API Key Missing. Please check your .env file.");
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
+        setError(null);
         
-        // ✅ STEP 1: USE A BROAD BUT TECH-FOCUSED QUERY
-        // We use keywords that are common in tech hiring and professional growth.
+        // GNews query optimization
         const query = encodeURIComponent(
-          '(hiring OR "software engineer jobs" OR "tech layoffs" OR "career advice" OR "developer salary") ' + 
-          'NOT (politics OR trump OR celebrity)'
+          '(hiring OR "tech jobs" OR "career advice" OR "developer salary")'
         );
 
-        // ✅ STEP 2: USE TOP-TIER TECH SOURCES ONLY
-        const techDomains = 'techcrunch.com,venturebeat.com,theverge.com,wired.com,zdnet.com';
-
-        const url = `https://newsapi.org/v2/everything?q=${query}&domains=${techDomains}&language=en&sortBy=publishedAt&pageSize=12&apiKey=${API_KEY}`;
+        // GNews endpoint: https://gnews.io/api/v4/search
+        // Note: domains filter is not a free-tier parameter for GNews, so we use a clean query
+        const url = `https://gnews.io/api/v4/search?q=${query}&lang=en&max=12&apikey=${API_KEY}`;
         
         const response = await fetch(url);
         const data = await response.json();
 
-        if (data.status === "ok") {
-          // ✅ STEP 3: POST-FETCH FILTERING
-          // Only show articles that actually have a description and image
-          const validArticles = (data.articles || []).filter(art => 
+        // GNews returns "articles" array if successful
+        if (data.articles) {
+          // ✅ GNews uses 'image' and 'url' instead of 'urlToImage'
+          const validArticles = data.articles.filter(art => 
             art.title && 
             art.title !== "[Removed]" && 
-            art.urlToImage
+            art.image // Check for GNews 'image' field
           );
 
           setArticles(validArticles);
           
           if (validArticles.length === 0) {
-            setError("No specific job roles found today. Showing general tech trends instead.");
+            setError("No specific tech market updates found today. Please check back later.");
           }
-        } else {
-          setError(data.message);
+        } else if (data.errors) {
+          // GNews specific error handling
+          setError(data.errors[0] || "API Error occurred.");
         }
       } catch (err) {
-        setError("Network connection failed.");
+        setError("Network connection failed. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -67,6 +67,7 @@ const News = () => {
       <Sidebar />
 
       <div className="main-content">
+        {/* Header Section */}
         <div className="top-header jm-animate-up">
           <div className="header-text">
             <h1>Tech Market Pulse <i className="fa-solid fa-briefcase" style={{color: 'var(--accent)'}}></i></h1>
@@ -74,6 +75,7 @@ const News = () => {
           </div>
         </div>
 
+        {/* Loading Animation */}
         {loading && (
           <div className="scanner-wrapper">
              <div className="scanner-box scanning">
@@ -83,13 +85,14 @@ const News = () => {
           </div>
         )}
 
-        {/* Show a small notice if specific jobs are missing but still allow content below */}
+        {/* Error Display */}
         {error && !articles.length && (
           <div className="glass-card jm-animate-up" style={{borderColor: '#ef4444', textAlign: 'center', margin: '20px auto'}}>
             <p>{error}</p>
           </div>
         )}
 
+        {/* News Grid */}
         {!loading && articles.length > 0 && (
           <div className="jm-news-wrapper jm-animate-up">
             <div className="jm-news-grid">
@@ -98,12 +101,12 @@ const News = () => {
                   <div 
                     className="jm-news-image" 
                     style={{ 
-                      backgroundImage: `url(${article.urlToImage || fallbackImage})`,
+                      backgroundImage: `url(${article.image || fallbackImage})`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center'
                     }}
                   >
-                    <span className="jm-news-badge">{article.source?.name || "News"}</span>
+                    <span className="jm-news-badge">{article.source?.name || "Tech News"}</span>
                   </div>
                   
                   <div className="jm-news-content">
@@ -118,7 +121,12 @@ const News = () => {
                       <span className="jm-news-date">
                         {new Date(article.publishedAt).toLocaleDateString()}
                       </span>
-                      <a href={article.url} target="_blank" rel="noopener noreferrer" className="jm-news-link">
+                      <a 
+                        href={article.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="jm-news-link"
+                      >
                         Explore <i className="fa-solid fa-arrow-right"></i>
                       </a>
                     </div>

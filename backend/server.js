@@ -56,41 +56,43 @@ app.post('/api/reviews', async (req, res) => {
   }
 });
 
-// ✅ UPDATED NEWS PROXY FOR NEWSDATA.IO
+// ✅ FINAL FIX: NEWS PROXY FOR NEWSDATA.IO
 app.get('/api/news', async (req, res) => {
   try {
-    // Note: Use NEWS_API_KEY in Render, but I kept the check flexible
     const apiKey = process.env.NEWS_API_KEY || process.env.VITE_NEWS_API_KEY;
     if (!apiKey) return res.status(500).json({ error: "API Key missing in Render settings" });
 
-    // NewsData.io query format (Keywords separated by spaces or commas)
-    const query = "software hiring, tech jobs, AI career, developer layoffs";
+    // ✅ STEP 1: Broaden the query. Use "OR" for multiple keywords.
+    // Simpler keywords ensure better results on the free tier.
+    const query = encodeURIComponent('software OR technology OR "tech jobs" OR "artificial intelligence"');
     
-    // NewsData URL: uses 'apikey' and 'q'
-    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${encodeURIComponent(query)}&language=en&category=technology`;
+    // ✅ STEP 2: Use the 'latest' endpoint or standard news endpoint
+    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${query}&language=en`;
 
     const response = await fetch(url);
     const data = await response.json();
 
-    // NewsData.io returns 'status: "error"' if key is wrong
     if (data.status === "error") {
-      return res.status(400).json({ status: 'error', message: data.results.message });
+      // NewsData provides the error message in data.results.message or data.message
+      const errorMsg = data.results?.message || data.message || "Unknown API error";
+      return res.status(400).json({ status: 'error', message: errorMsg });
     }
 
-    // Standardize the response so Frontend doesn't break
-    // We map 'results' to 'articles' to match your News.jsx logic
+    // ✅ STEP 3: Map the results to the 'articles' format for the Frontend
     const articles = (data.results || []).map(article => ({
-      title: article.title,
-      description: article.description,
-      url: article.link,
-      image: article.image_url,
+      title: article.title || "No Title",
+      description: article.description || "Click to explore this tech update for insights.",
+      url: article.link || "#",
+      image: article.image_url, // News.jsx fallback will handle nulls
       publishedAt: article.pubDate,
-      source: { name: article.source_id }
+      source: { name: article.source_id || "Tech News" }
     }));
 
+    // Even if results are empty, we send back the array so frontend doesn't crash
     res.json({ articles }); 
   } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
+    console.error("News Proxy Error:", err);
+    res.status(500).json({ status: 'error', message: "Internal server error fetching news" });
   }
 });
 

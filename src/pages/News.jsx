@@ -3,6 +3,8 @@ import Sidebar from '../components/Sidebar';
 
 const News = () => {
   const [articles, setArticles] = useState([]);
+  const [filteredArticles, setFilteredArticles] = useState([]); // For Search
+  const [searchTerm, setSearchTerm] = useState(""); // Search state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -14,9 +16,7 @@ const News = () => {
         setLoading(true);
         setError(null);
         
-        // Calls your Render Backend Proxy
         const url = `https://placement-sync.onrender.com/api/news`;
-        
         const response = await fetch(url);
         
         if (!response.ok) {
@@ -26,14 +26,12 @@ const News = () => {
 
         const data = await response.json();
 
-        // data.articles comes from your updated server.js mapping
         if (data && data.articles) {
           const validArticles = data.articles.filter(art => 
-            art.title && 
-            art.title !== "[Removed]"
+            art.title && art.title !== "[Removed]"
           );
-
           setArticles(validArticles);
+          setFilteredArticles(validArticles); // Set initial filtered list
           
           if (validArticles.length === 0) {
             setError("No tech market updates found at the moment.");
@@ -42,25 +40,46 @@ const News = () => {
           setError("Received unexpected data format from the server.");
         }
       } catch (err) {
-        console.error("News Fetch Error:", err);
-        setError(err.message || "Network connection failed. Make sure your Render backend is live.");
+        setError(err.message || "Network connection failed.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchNews();
-  }, []); // Empty array prevents the infinite refresh loop
+  }, []);
+
+  // ✅ Client-side Search Logic
+  useEffect(() => {
+    const results = articles.filter(article =>
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (article.description && article.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+    setFilteredArticles(results);
+  }, [searchTerm, articles]);
 
   return (
     <div className="dashboard-container">
       <Sidebar />
 
       <div className="main-content">
-        <div className="top-header jm-animate-up">
+        <div className="top-header pulse-animate-up">
           <div className="header-text">
             <h1>Tech Market Pulse <i className="fa-solid fa-briefcase" style={{color: 'var(--accent)'}}></i></h1>
             <p>Staying informed on industry trends is the first step to a successful career.</p>
+          </div>
+
+          {/* ✅ New Search Bar with Unique Classes */}
+          <div className="pulse-search-container">
+            <div className="pulse-search-wrapper">
+              <i className="fa-solid fa-magnifying-glass pulse-search-icon"></i>
+              <input 
+                type="text" 
+                className="pulse-search-input" 
+                placeholder="Search specific roles, skills, or trends..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
@@ -74,46 +93,52 @@ const News = () => {
         )}
 
         {error && !articles.length && (
-          <div className="glass-card jm-animate-up" style={{borderColor: '#ef4444', textAlign: 'center', margin: '20px auto'}}>
+          <div className="glass-card pulse-animate-up" style={{borderColor: '#ef4444', textAlign: 'center', margin: '20px auto'}}>
             <p>{error}</p>
           </div>
         )}
 
-        {!loading && articles.length > 0 && (
-          <div className="jm-news-wrapper jm-animate-up">
-            <div className="jm-news-grid">
-              {articles.map((article, index) => (
-                <div key={index} className="jm-news-card">
+        {!loading && filteredArticles.length === 0 && searchTerm && (
+          <div className="pulse-no-results">
+             <p>No matches found for "{searchTerm}"</p>
+          </div>
+        )}
+
+        {!loading && filteredArticles.length > 0 && (
+          <div className="pulse-news-wrapper pulse-animate-up">
+            <div className="pulse-news-grid">
+              {filteredArticles.map((article, index) => (
+                <div key={index} className="pulse-news-card">
                   <div 
-                    className="jm-news-image" 
+                    className="pulse-news-image" 
                     style={{ 
                       backgroundImage: `url(${article.image || article.urlToImage || fallbackImage})`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center'
                     }}
                   >
-                    <span className="jm-news-badge">{article.source?.name || "Tech News"}</span>
+                    <span className="pulse-news-badge">{article.source?.name || "Tech News"}</span>
                   </div>
                   
-                  <div className="jm-news-content">
+                  <div className="pulse-news-content">
                     <div>
-                      <h4 className="jm-news-title">{article.title}</h4>
-                      <p className="jm-news-desc">
+                      <h4 className="pulse-news-title">{article.title}</h4>
+                      <p className="pulse-news-desc">
                         {article.description 
                           ? (article.description.length > 95 ? article.description.slice(0, 95) + "..." : article.description)
                           : "Explore this update for insights into the current tech market."}
                       </p>
                     </div>
                     
-                    <div className="jm-news-footer">
-                      <span className="jm-news-date">
+                    <div className="pulse-news-footer">
+                      <span className="pulse-news-date">
                         {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : "Recent"}
                       </span>
                       <a 
                         href={article.url} 
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        className="jm-news-link"
+                        className="pulse-news-link"
                       >
                         Explore <i className="fa-solid fa-arrow-right"></i>
                       </a>

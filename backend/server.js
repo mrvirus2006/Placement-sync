@@ -59,7 +59,7 @@ app.post('/api/reviews', async (req, res) => {
 // ✅ UPDATED NEWS PROXY FOR GNEWS
 app.get('/api/news', async (req, res) => {
   try {
-    const apiKey = process.env.VITE_NEWS_API_KEY;
+    const apiKey = process.env.NEWS_API_KEY;
     if (!apiKey) return res.status(500).json({ error: "API Key missing in Render settings" });
 
     // We use a specific query for Job Market/Tech

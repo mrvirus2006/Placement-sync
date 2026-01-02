@@ -29,7 +29,7 @@ const News = () => {
 
         // GNews endpoint: https://gnews.io/api/v4/search
         // Note: domains filter is not a free-tier parameter for GNews, so we use a clean query
-        const url = `https://gnews.io/api/v4/search?q=${query}&lang=en&max=12&apikey=${API_KEY}`;
+        const url = `https://placement-sync.onrender.com/api/news`;
         
         const response = await fetch(url);
         const data = await response.json();

@@ -35,7 +35,6 @@ const Review = mongoose.model('Review', reviewSchema);
 
 // --- ROUTES ---
 
-// Reviews
 app.get('/api/reviews', async (req, res) => {
   try {
     const reviews = await Review.find().sort({ date: -1 });
@@ -56,39 +55,38 @@ app.post('/api/reviews', async (req, res) => {
   }
 });
 
-// ✅ FINAL FIX: NEWS PROXY FOR NEWSDATA.IO
+// ✅ UPDATED NEWS PROXY: JOB MARKET FOCUS
 app.get('/api/news', async (req, res) => {
   try {
     const apiKey = process.env.NEWS_API_KEY || process.env.VITE_NEWS_API_KEY;
     if (!apiKey) return res.status(500).json({ error: "API Key missing in Render settings" });
 
-    // ✅ STEP 1: Broaden the query. Use "OR" for multiple keywords.
-    // Simpler keywords ensure better results on the free tier.
-    const query = encodeURIComponent('software OR technology OR "tech jobs" OR "artificial intelligence"');
+    // ✅ NEW STRATEGY: Focus on Action Keywords + Industry
+    // This looks for "hiring" or "jobs" specifically within the tech sector.
+    const query = encodeURIComponent(
+      '("tech hiring" OR "software engineer jobs" OR "developer salary" OR "remote work" OR "tech layoffs")'
+    );
     
-    // ✅ STEP 2: Use the 'latest' endpoint or standard news endpoint
-    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${query}&language=en`;
+    // We add 'business' and 'technology' categories to filter out gadget reviews and general tech news.
+    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${query}&language=en&category=technology,business`;
 
     const response = await fetch(url);
     const data = await response.json();
 
     if (data.status === "error") {
-      // NewsData provides the error message in data.results.message or data.message
       const errorMsg = data.results?.message || data.message || "Unknown API error";
       return res.status(400).json({ status: 'error', message: errorMsg });
     }
 
-    // ✅ STEP 3: Map the results to the 'articles' format for the Frontend
     const articles = (data.results || []).map(article => ({
-      title: article.title || "No Title",
-      description: article.description || "Click to explore this tech update for insights.",
+      title: article.title || "Job Market Update",
+      description: article.description || "Stay ahead of the curve with the latest hiring trends and market shifts.",
       url: article.link || "#",
-      image: article.image_url, // News.jsx fallback will handle nulls
+      image: article.image_url, 
       publishedAt: article.pubDate,
-      source: { name: article.source_id || "Tech News" }
+      source: { name: article.source_id || "Career Insights" }
     }));
 
-    // Even if results are empty, we send back the array so frontend doesn't crash
     res.json({ articles }); 
   } catch (err) {
     console.error("News Proxy Error:", err);

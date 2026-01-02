@@ -75,7 +75,7 @@ const News = () => {
               <input 
                 type="text" 
                 className="pulse-search-input" 
-                placeholder="Search specific roles, skills, or trends..."
+                placeholder="Search .."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />

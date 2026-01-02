@@ -6,68 +6,58 @@ const News = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // GNews API uses 'apikey' as the parameter name
-  const API_KEY = import.meta.env.VITE_NEWS_API_KEY; 
   const fallbackImage = "https://images.unsplash.com/photo-1586281380349-632531db7ed4?q=80&w=1000&auto=format&fit=crop";
 
   useEffect(() => {
     const fetchNews = async () => {
-      if (!API_KEY) {
-        setError("API Key Missing. Please check your .env file.");
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
         setError(null);
         
-        // GNews query optimization
-        const query = encodeURIComponent(
-          '(hiring OR "tech jobs" OR "career advice" OR "developer salary")'
-        );
-
-        // GNews endpoint: https://gnews.io/api/v4/search
-        // Note: domains filter is not a free-tier parameter for GNews, so we use a clean query
+        // ✅ Points to your Render Backend Proxy (Works everywhere)
         const url = `https://placement-sync.onrender.com/api/news`;
         
         const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error("Server responded with an error. Please check backend logs.");
+        }
+
         const data = await response.json();
 
-        // GNews returns "articles" array if successful
-        if (data.articles) {
-          // ✅ GNews uses 'image' and 'url' instead of 'urlToImage'
+        // ✅ Check if articles exist in the response
+        if (data && data.articles) {
+          // GNews uses 'image' and 'url'
           const validArticles = data.articles.filter(art => 
             art.title && 
             art.title !== "[Removed]" && 
-            art.image // Check for GNews 'image' field
+            (art.image || art.urlToImage) // Handle both naming conventions just in case
           );
 
           setArticles(validArticles);
           
           if (validArticles.length === 0) {
-            setError("No specific tech market updates found today. Please check back later.");
+            setError("No tech market updates found at the moment.");
           }
-        } else if (data.errors) {
-          // GNews specific error handling
-          setError(data.errors[0] || "API Error occurred.");
+        } else {
+          setError(data.message || "Invalid news data received.");
         }
       } catch (err) {
-        setError("Network connection failed. Please try again.");
+        console.error("News Fetch Error:", err);
+        setError("Network connection failed. Make sure your Render backend is live.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchNews();
-  }, [API_KEY]);
+  }, []); // ✅ EMPTY ARRAY stops the infinite loop error
 
   return (
     <div className="dashboard-container">
       <Sidebar />
 
       <div className="main-content">
-        {/* Header Section */}
         <div className="top-header jm-animate-up">
           <div className="header-text">
             <h1>Tech Market Pulse <i className="fa-solid fa-briefcase" style={{color: 'var(--accent)'}}></i></h1>
@@ -75,7 +65,6 @@ const News = () => {
           </div>
         </div>
 
-        {/* Loading Animation */}
         {loading && (
           <div className="scanner-wrapper">
              <div className="scanner-box scanning">
@@ -85,14 +74,12 @@ const News = () => {
           </div>
         )}
 
-        {/* Error Display */}
         {error && !articles.length && (
           <div className="glass-card jm-animate-up" style={{borderColor: '#ef4444', textAlign: 'center', margin: '20px auto'}}>
             <p>{error}</p>
           </div>
         )}
 
-        {/* News Grid */}
         {!loading && articles.length > 0 && (
           <div className="jm-news-wrapper jm-animate-up">
             <div className="jm-news-grid">
@@ -101,7 +88,7 @@ const News = () => {
                   <div 
                     className="jm-news-image" 
                     style={{ 
-                      backgroundImage: `url(${article.image || fallbackImage})`,
+                      backgroundImage: `url(${article.image || article.urlToImage || fallbackImage})`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center'
                     }}

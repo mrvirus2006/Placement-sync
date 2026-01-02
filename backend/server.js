@@ -56,28 +56,39 @@ app.post('/api/reviews', async (req, res) => {
   }
 });
 
-// ✅ UPDATED NEWS PROXY FOR GNEWS
+// ✅ UPDATED NEWS PROXY FOR NEWSDATA.IO
 app.get('/api/news', async (req, res) => {
   try {
-    const apiKey = process.env.NEWS_API_KEY;
+    // Note: Use NEWS_API_KEY in Render, but I kept the check flexible
+    const apiKey = process.env.NEWS_API_KEY || process.env.VITE_NEWS_API_KEY;
     if (!apiKey) return res.status(500).json({ error: "API Key missing in Render settings" });
 
-    // We use a specific query for Job Market/Tech
-    const query = encodeURIComponent(
-      '(hiring OR "job market" OR "career opportunities" OR "tech layoffs" OR "software engineering trends" OR "artificial intelligence jobs" OR "entry level developer") ' +
-      'AND (software OR technology OR programming OR IT)'
-    );
-    const url = `https://gnews.io/api/v4/search?q=${query}&lang=en&max=12&apikey=${apiKey}`;
+    // NewsData.io query format (Keywords separated by spaces or commas)
+    const query = "software hiring, tech jobs, AI career, developer layoffs";
+    
+    // NewsData URL: uses 'apikey' and 'q'
+    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${encodeURIComponent(query)}&language=en&category=technology`;
 
     const response = await fetch(url);
     const data = await response.json();
 
-    // GNews sends "errors" array if something is wrong
-    if (data.errors) {
-      return res.status(400).json({ status: 'error', message: data.errors[0] });
+    // NewsData.io returns 'status: "error"' if key is wrong
+    if (data.status === "error") {
+      return res.status(400).json({ status: 'error', message: data.results.message });
     }
 
-    res.json(data);
+    // Standardize the response so Frontend doesn't break
+    // We map 'results' to 'articles' to match your News.jsx logic
+    const articles = (data.results || []).map(article => ({
+      title: article.title,
+      description: article.description,
+      url: article.link,
+      image: article.image_url,
+      publishedAt: article.pubDate,
+      source: { name: article.source_id }
+    }));
+
+    res.json({ articles }); 
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }

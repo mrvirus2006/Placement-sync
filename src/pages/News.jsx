@@ -14,24 +14,23 @@ const News = () => {
         setLoading(true);
         setError(null);
         
-        // ✅ Points to your Render Backend Proxy (Works everywhere)
+        // Calls your Render Backend Proxy
         const url = `https://placement-sync.onrender.com/api/news`;
         
         const response = await fetch(url);
         
         if (!response.ok) {
-          throw new Error("Server responded with an error. Please check backend logs.");
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch from server");
         }
 
         const data = await response.json();
 
-        // ✅ Check if articles exist in the response
+        // data.articles comes from your updated server.js mapping
         if (data && data.articles) {
-          // GNews uses 'image' and 'url'
           const validArticles = data.articles.filter(art => 
             art.title && 
-            art.title !== "[Removed]" && 
-            (art.image || art.urlToImage) // Handle both naming conventions just in case
+            art.title !== "[Removed]"
           );
 
           setArticles(validArticles);
@@ -40,18 +39,18 @@ const News = () => {
             setError("No tech market updates found at the moment.");
           }
         } else {
-          setError(data.message || "Invalid news data received.");
+          setError("Received unexpected data format from the server.");
         }
       } catch (err) {
         console.error("News Fetch Error:", err);
-        setError("Network connection failed. Make sure your Render backend is live.");
+        setError(err.message || "Network connection failed. Make sure your Render backend is live.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchNews();
-  }, []); // ✅ EMPTY ARRAY stops the infinite loop error
+  }, []); // Empty array prevents the infinite refresh loop
 
   return (
     <div className="dashboard-container">
@@ -100,13 +99,15 @@ const News = () => {
                     <div>
                       <h4 className="jm-news-title">{article.title}</h4>
                       <p className="jm-news-desc">
-                        {article.description ? article.description.slice(0, 95) + "..." : "Explore this update for insights into the current tech market."}
+                        {article.description 
+                          ? (article.description.length > 95 ? article.description.slice(0, 95) + "..." : article.description)
+                          : "Explore this update for insights into the current tech market."}
                       </p>
                     </div>
                     
                     <div className="jm-news-footer">
                       <span className="jm-news-date">
-                        {new Date(article.publishedAt).toLocaleDateString()}
+                        {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : "Recent"}
                       </span>
                       <a 
                         href={article.url} 
